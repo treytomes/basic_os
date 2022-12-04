@@ -3,6 +3,12 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+typedef enum Keyboard_scancodes {
+    KEY_ESCAPE = 0x01,
+    KEY_BACKSPACE = 0x0E,
+    KEY_ENTER = 0x1C
+};
+
 typedef struct {
     uint8_t scancode;
     bool pressed;

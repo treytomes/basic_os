@@ -11,6 +11,14 @@ const uint8_t DEFAULT_COLOR = 0x7;
 uint8_t* g_ScreenBuffer = (uint8_t*)0xB8000;
 int g_ScreenX = 0, g_ScreenY = 0;
 
+char VGA_getchr(int x, int y) {
+    return g_ScreenBuffer[2 * (y * SCREEN_WIDTH + x)];
+}
+
+uint8_t VGA_getcolor(int x, int y) {
+    return g_ScreenBuffer[2 * (y * SCREEN_WIDTH + x) + 1];
+}
+
 void VGA_putchr(int x, int y, char c)
 {
     g_ScreenBuffer[2 * (y * SCREEN_WIDTH + x)] = c;
@@ -21,18 +29,18 @@ void VGA_putcolor(int x, int y, uint8_t color)
     g_ScreenBuffer[2 * (y * SCREEN_WIDTH + x) + 1] = color;
 }
 
-char VGA_getchr(int x, int y)
-{
-    return g_ScreenBuffer[2 * (y * SCREEN_WIDTH + x)];
+int VGA_getcursorx() {
+    return g_ScreenX;
 }
 
-uint8_t VGA_getcolor(int x, int y)
-{
-    return g_ScreenBuffer[2 * (y * SCREEN_WIDTH + x) + 1];
+int VGA_getcursory() {
+    return g_ScreenY;
 }
 
-void VGA_setcursor(int x, int y)
-{
+void VGA_setcursor(int x, int y) {
+    g_ScreenX = x;
+    g_ScreenY = y;
+
     int pos = y * SCREEN_WIDTH + x;
 
     i686_outb(0x3D4, 0x0F);

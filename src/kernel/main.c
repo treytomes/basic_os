@@ -10,10 +10,9 @@
 
 // For i686_inb/outb.
 #include "arch/i686/io.h"
-
 #include "arch/i686/i8259.h"
-
 #include "arch/i686/i8042.h"
+#include "arch/i686/vga_text.h"
 
 #include <hal/keyboard.h>
 
@@ -38,6 +37,31 @@ void ReportPS2Ports() {
     } else {
         printf("...Mouse detected on PS/2 port %d.\r\n", driver->MousePortNumber);
     }
+}
+
+void printPrompt() {
+    printf("> ");
+}
+
+void processLine(int lineStartX, int lineStartY, int lineLength) {
+    int x = lineStartX;
+    int y = lineStartY;
+    
+    printf("\n---BEGIN---\nYou typed: \"");
+
+    while (lineLength > 0) {
+        char ch = VGA_getchr(x, y);
+        //printf("%d, %d, %d, '%c'", lineLength, x, y, ch);
+        putc(ch);
+        lineLength--;
+        x++;
+        if (x >= SCREEN_WIDTH) {
+            x = 0;
+            y++;
+        }
+    }
+
+    printf("\"\n---END---\n");
 }
 
 void start(BootParams* bootParams)
@@ -74,9 +98,11 @@ void start(BootParams* bootParams)
     ReportPS2Ports();
 
     printf("\nOK\n");
-    printf("> ");
+    printPrompt();
 
     Keyboard_clearBuffer();
+    int lineStartX = VGA_getcursorx();
+    int lineStartY = VGA_getcursory();
     int lineLength = 0;
     while (true) {
         while (Keyboard_hasKey()) {
@@ -84,22 +110,23 @@ void start(BootParams* bootParams)
             //printf("[main] key %s: %x, %d\r\n", key->pressed ? "pressed" : "released", key->scancode, key->ascii);
             if (key != NULL) {
                 if (key->pressed) {
-                    if (key->ascii != 0) {
-                        if (key->ascii == '\b') {
-                            if (lineLength > 0) {
-                                putc(key->ascii);
-                                lineLength--;
-                            } else {
-                                // TODO: Else beep?
-                            }
+                    if (key->scancode == KEY_BACKSPACE) {
+                        if (lineLength > 0) {
+                            putc(key->ascii);
+                            lineLength--;
                         } else {
+                            // TODO: Else beep?
+                        }
+                    } else if (key->scancode == KEY_ENTER) {
+                        processLine(lineStartX, lineStartY, lineLength);
+                        printPrompt();
+                        lineLength = 0;
+                        lineStartX = VGA_getcursorx();
+                        lineStartY = VGA_getcursory();
+                    } else {
+                        if (key->ascii != 0) {
                             putc(key->ascii);
                             lineLength++;
-                        }
-                        if (key->scancode == 0x1C) { // <Enter>
-                            // TODO: Process the line.
-                            printf("> "); // Re-print the prompt.
-                            lineLength = 0;
                         }
                     }
                 }
